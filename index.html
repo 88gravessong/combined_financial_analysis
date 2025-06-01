@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财务数据分析系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .upload-box {
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f9f9f9;
+            transition: all 0.3s ease;
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .upload-box:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateY(-5px);
+        }
+
+        .upload-box.dragover {
+            border-color: #667eea;
+            background: #e3f2fd;
+            transform: scale(1.02);
+        }
+
+        .upload-box h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .upload-box p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-list {
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .file-item {
+            background: #e8f5e8;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .file-item .remove-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .process-section {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .process-btn {
+            background: linear-gradient(45deg, #2ed573, #1e90ff);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .process-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(46, 213, 115, 0.4);
+        }
+
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .progress {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(45deg, #2ed573, #1e90ff);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .download-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 15px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 财务数据分析系统</h1>
+        
+        <div class="upload-section">
+            <!-- 订单表上传区域 -->
+            <div class="upload-box" data-type="orders">
+                <h3>📋 订单表</h3>
+                <p>拖拽或点击上传订单Excel文件<br>支持多个文件</p>
+                <button class="upload-btn" onclick="document.getElementById('orders-input').click()">选择文件</button>
+                <input type="file" id="orders-input" class="file-input" multiple accept=".xlsx,.xls" data-type="orders">
+                <div class="file-list" id="orders-list"></div>
+            </div>
+
+            <!-- 结算表上传区域 -->
+            <div class="upload-box" data-type="settlements">
+                <h3>💳 结算表</h3>
+                <p>拖拽或点击上传结算Excel文件<br>支持多个文件</p>
+                <button class="upload-btn" onclick="document.getElementById('settlements-input').click()">选择文件</button>
+                <input type="file" id="settlements-input" class="file-input" multiple accept=".xlsx,.xls" data-type="settlements">
+                <div class="file-list" id="settlements-list"></div>
+            </div>
+
+            <!-- 产品消耗表上传区域 -->
+            <div class="upload-box" data-type="consumption">
+                <h3>📊 产品成本消耗表</h3>
+                <p>拖拽或点击上传产品消耗Excel文件<br>仅支持单个文件</p>
+                <button class="upload-btn" onclick="document.getElementById('consumption-input').click()">选择文件</button>
+                <input type="file" id="consumption-input" class="file-input" accept=".xlsx,.xls" data-type="consumption">
+                <div class="file-list" id="consumption-list"></div>
+            </div>
+        </div>
+
+        <div class="process-section">
+            <button class="process-btn" id="process-btn" onclick="processFiles()" disabled>
+                🚀 开始分析
+            </button>
+            
+            <div class="progress" id="progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileStorage = {
+            orders: [],
+            settlements: [],
+            consumption: null
+        };
+
+        // 初始化拖拽功能
+        document.querySelectorAll('.upload-box').forEach(box => {
+            box.addEventListener('dragover', handleDragOver);
+            box.addEventListener('dragenter', handleDragEnter);
+            box.addEventListener('dragleave', handleDragLeave);
+            box.addEventListener('drop', handleDrop);
+        });
+
+        // 初始化文件输入功能
+        document.querySelectorAll('.file-input').forEach(input => {
+            input.addEventListener('change', handleFileSelect);
+        });
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            const type = this.dataset.type;
+            
+            addFiles(type, files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            const type = e.target.dataset.type;
+            
+            addFiles(type, files);
+        }
+
+        function addFiles(type, files) {
+            // 验证文件类型
+            const validFiles = files.filter(file => 
+                file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+            );
+
+            if (validFiles.length !== files.length) {
+                alert('请上传Excel文件（.xlsx或.xls格式）');
+            }
+
+            if (type === 'consumption') {
+                // 产品消耗表只允许一个文件
+                fileStorage.consumption = validFiles[0] || null;
+            } else {
+                // 订单表和结算表允许多个文件
+                fileStorage[type] = [...fileStorage[type], ...validFiles];
+            }
+
+            updateFileList(type);
+            updateProcessButton();
+        }
+
+        function updateFileList(type) {
+            const listContainer = document.getElementById(`${type}-list`);
+            listContainer.innerHTML = '';
+
+            if (type === 'consumption') {
+                if (fileStorage.consumption) {
+                    const fileItem = createFileItem(fileStorage.consumption.name, () => {
+                        fileStorage.consumption = null;
+                        updateFileList(type);
+                        updateProcessButton();
+                    });
+                    listContainer.appendChild(fileItem);
+                }
+            } else {
+                fileStorage[type].forEach((file, index) => {
+                    const fileItem = createFileItem(file.name, () => {
+                        fileStorage[type].splice(index, 1);
+                        updateFileList(type);
+                        updateProcessButton();
+                    });
+                    listContainer.appendChild(fileItem);
+                });
+            }
+        }
+
+        function createFileItem(fileName, onRemove) {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <span title="${fileName}">${fileName.length > 25 ? fileName.substring(0, 25) + '...' : fileName}</span>
+                <button class="remove-btn" onclick="event.stopPropagation()">×</button>
+            `;
+            item.querySelector('.remove-btn').addEventListener('click', onRemove);
+            return item;
+        }
+
+        function updateProcessButton() {
+            const hasOrders = fileStorage.orders.length > 0;
+            const hasSettlements = fileStorage.settlements.length > 0;
+            const hasConsumption = fileStorage.consumption !== null;
+
+            const processBtn = document.getElementById('process-btn');
+            processBtn.disabled = !(hasOrders && hasSettlements && hasConsumption);
+        }
+
+        async function processFiles() {
+            const processBtn = document.getElementById('process-btn');
+            const progress = document.getElementById('progress');
+            const progressBar = document.getElementById('progress-bar');
+            const result = document.getElementById('result');
+
+            // 禁用按钮并显示进度条
+            processBtn.disabled = true;
+            processBtn.textContent = '⏳ 处理中...';
+            progress.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                // 准备FormData
+                const formData = new FormData();
+                
+                // 添加订单文件
+                fileStorage.orders.forEach((file, index) => {
+                    formData.append('orders', file);
+                });
+                
+                // 添加结算文件
+                fileStorage.settlements.forEach((file, index) => {
+                    formData.append('settlements', file);
+                });
+                
+                // 添加消耗文件
+                formData.append('consumption', fileStorage.consumption);
+
+                // 模拟进度更新
+                let progress_value = 0;
+                const progressInterval = setInterval(() => {
+                    progress_value += Math.random() * 20;
+                    if (progress_value > 90) progress_value = 90;
+                    progressBar.style.width = `${progress_value}%`;
+                }, 300);
+
+                // 发送请求
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    
+                    result.className = 'result success';
+                    result.innerHTML = `
+                        <h3>✅ 处理完成！</h3>
+                        <p>财务分析报告已生成</p>
+                        <a href="${url}" download="财务分析结果.xlsx" class="download-btn">📥 下载结果文件</a>
+                    `;
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '处理失败');
+                }
+
+            } catch (error) {
+                result.className = 'result error';
+                result.innerHTML = `
+                    <h3>❌ 处理失败</h3>
+                    <p>错误信息：${error.message}</p>
+                `;
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = '🚀 开始分析';
+                progress.style.display = 'none';
+                progressBar.style.width = '0%';
+                result.style.display = 'block';
+                updateProcessButton();
+            }
+        }
+    </script>
+</body>
+</html> 
