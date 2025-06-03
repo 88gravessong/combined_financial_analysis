@@ -7,14 +7,71 @@ analysis_multi.py
 - 支持多个订单表文件合并
 - 支持多个结算表文件合并
 - 单个产品消耗表
+- 支持组合SKU预处理
 """
 
 import pandas as pd
 from pathlib import Path
 from typing import List, Union
+import re
 
 # 汇率设置
 IDR_PER_RMB, IDR_PER_USD = 2300, 16000
+
+def preprocess_combo_sku(df: pd.DataFrame, sku_col: str, qty_col: str) -> pd.DataFrame:
+    """
+    预处理组合SKU，将组合SKU转换为基础SKU并调整数量
+    
+    Args:
+        df: 包含订单数据的DataFrame
+        sku_col: SKU列名
+        qty_col: 数量列名
+    
+    Returns:
+        处理后的DataFrame
+    """
+    df = df.copy()
+    combo_count = 0
+    
+    # 组合SKU模式定义
+    # pattern: (正则表达式, 基础SKU提取函数, 倍数提取函数)
+    combo_patterns = [
+        # grease-2, grease-3 等模式
+        (r'^(.+)-(\d+)$', lambda m: f"{m.group(1)}-1", lambda m: int(m.group(2))),
+        # toothpaste*2, toothpaste*3 等模式  
+        (r'^(.+)\*(\d+)$', lambda m: f"{m.group(1)}*1", lambda m: int(m.group(2))),
+    ]
+    
+    for idx, sku in enumerate(df[sku_col]):
+        if pd.isna(sku):
+            continue
+            
+        sku_str = str(sku).strip()
+        original_qty = df.loc[idx, qty_col]
+        
+        # 检查每个组合SKU模式
+        for pattern, base_sku_func, multiplier_func in combo_patterns:
+            match = re.match(pattern, sku_str)
+            if match:
+                multiplier = multiplier_func(match)
+                # 只处理倍数大于1的情况
+                if multiplier > 1:
+                    base_sku = base_sku_func(match)
+                    new_qty = original_qty * multiplier
+                    
+                    df.loc[idx, sku_col] = base_sku
+                    df.loc[idx, qty_col] = new_qty
+                    combo_count += 1
+                    
+                    print(f"🔄 组合SKU转换: {sku_str} -> {base_sku}, 数量: {original_qty} -> {new_qty}")
+                break
+    
+    if combo_count > 0:
+        print(f"✅ 完成组合SKU预处理: 转换了 {combo_count} 个组合SKU")
+    else:
+        print("ℹ️  未发现需要处理的组合SKU")
+    
+    return df
 
 def merge_order_files(order_files: List[Union[str, Path]]) -> pd.DataFrame:
     """合并多个订单表文件"""
@@ -145,8 +202,14 @@ def process_financial_data(order_files: List[Union[str, Path]],
 
     print(f"📝 识别到关键列: 数量({qty_col}), SKU({sku_col}), 出库({ship_col}), 状态({status_col})")
 
-    # 数据类型转换
+    # 数据类型转换（必须在组合SKU预处理之前进行）
     order[qty_col] = pd.to_numeric(order[qty_col], errors="coerce").fillna(0).astype(int)
+
+    # -------- 组合SKU预处理 --------
+    print("🔧 开始组合SKU预处理...")
+    order = preprocess_combo_sku(order, sku_col, qty_col)
+
+    # 继续其他数据转换
     order["_shipped"] = order[ship_col].str.strip().str.lower()
     order["_status"] = order[status_col].str.strip().str.lower()
 
