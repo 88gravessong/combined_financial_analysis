@@ -30,44 +30,11 @@
         h1 {
             text-align: center;
             color: #333;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             font-size: 2.5rem;
             background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-
-        .module-selector {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .module-btn {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 25px;
-            padding: 8px 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            color: #333;
-        }
-
-        .module-btn:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-
-        .module-btn.active {
-            border-color: #667eea;
-            background: #667eea;
-            color: white;
-        }
-
-        .module-btn input[type="radio"] {
-            display: none;
         }
 
         .upload-section {
@@ -257,30 +224,12 @@
             .upload-section {
                 grid-template-columns: 1fr;
             }
-
-            .module-selector {
-                flex-direction: column;
-                align-items: center;
-                gap: 10px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>💰 财务数据分析系统</h1>
-        
-        <!-- 简洁的模块选择器 -->
-        <div class="module-selector">
-            <label class="module-btn active">
-                <input type="radio" name="analysis_type" value="indonesia" checked>
-                印尼财务分析
-            </label>
-            <label class="module-btn">
-                <input type="radio" name="analysis_type" value="malaysia">
-                马来跨境店财务分析
-            </label>
-        </div>
         
         <div class="upload-section">
             <!-- 订单表上传区域 -->
@@ -343,19 +292,6 @@
         document.querySelectorAll('.file-input').forEach(input => {
             input.addEventListener('change', handleFileSelect);
         });
-
-        // 初始化模块选择功能
-        document.querySelectorAll('input[name="analysis_type"]').forEach(radio => {
-            radio.addEventListener('change', handleModuleChange);
-        });
-
-        function handleModuleChange(e) {
-            // 更新按钮样式
-            document.querySelectorAll('.module-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            e.target.closest('.module-btn').classList.add('active');
-        }
 
         function handleDragOver(e) {
             e.preventDefault();
@@ -471,10 +407,6 @@
                 // 准备FormData
                 const formData = new FormData();
                 
-                // 获取选中的分析模块
-                const selectedModule = document.querySelector('input[name="analysis_type"]:checked').value;
-                formData.append('analysis_type', selectedModule);
-                
                 // 添加订单文件
                 fileStorage.orders.forEach((file, index) => {
                     formData.append('orders', file);
@@ -509,14 +441,11 @@
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     
-                    const moduleName = selectedModule === 'malaysia' ? '马来跨境店' : '印尼';
-                    const downloadName = selectedModule === 'malaysia' ? '马来跨境店财务分析结果.xlsx' : '印尼财务分析结果.xlsx';
-                    
                     result.className = 'result success';
                     result.innerHTML = `
                         <h3>✅ 处理完成！</h3>
-                        <p>${moduleName}财务分析报告已生成</p>
-                        <a href="${url}" download="${downloadName}" class="download-btn">📥 下载结果文件</a>
+                        <p>财务分析报告已生成</p>
+                        <a href="${url}" download="财务分析结果.xlsx" class="download-btn">📥 下载结果文件</a>
                     `;
                 } else {
                     const errorData = await response.json();
