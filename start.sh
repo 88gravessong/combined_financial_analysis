@@ -4,7 +4,7 @@ echo "💰 财务数据分析系统启动脚本"
 echo "================================"
 
 # 检查Python环境
-if ! command -v python &> /dev/null; then
+if ! command -v python3 &> /dev/null; then
     echo "❌ 未找到Python，请先安装Python"
     exit 1
 fi
@@ -17,7 +17,7 @@ fi
 
 # 安装依赖
 echo "📦 检查并安装依赖..."
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 # 检查必要文件
 required_files=("app.py" "analysis_multi.py" "index.html")
@@ -36,4 +36,4 @@ echo "💡 使用 Ctrl+C 停止服务器"
 echo ""
 
 # 启动Flask应用
-python app.py 
+python3 app.py 
