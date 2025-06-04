@@ -12,8 +12,9 @@ from flask import Flask, request, send_file, jsonify, render_template_string
 from werkzeug.utils import secure_filename
 import pandas as pd
 
-# 导入修改后的分析模块
+# 导入分析模块
 from analysis_multi import process_financial_data
+from analysis_mal import process_malaysia_financial_data
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB
@@ -40,6 +41,9 @@ def index():
 def process_files():
     """处理上传的文件并执行分析"""
     try:
+        # 获取分析模块类型
+        analysis_type = request.form.get('analysis_type', 'indonesia')
+        
         # 检查是否有文件上传
         if 'orders' not in request.files or 'settlements' not in request.files or 'consumption' not in request.files:
             return jsonify({'error': '缺少必要的文件。请确保上传了订单表、结算表和产品消耗表。'}), 400
@@ -84,20 +88,30 @@ def process_files():
             consumption_path = temp_path / consumption_filename
             consumption_file.save(str(consumption_path))
 
-            # 执行数据分析
+            # 根据选择的模块执行数据分析
             try:
-                output_path = process_financial_data(
-                    order_files=order_paths,
-                    settlement_files=settlement_paths,
-                    consumption_file=consumption_path,
-                    output_dir=temp_path
-                )
+                if analysis_type == 'malaysia':
+                    output_path = process_malaysia_financial_data(
+                        order_files=order_paths,
+                        settlement_files=settlement_paths,
+                        consumption_file=consumption_path,
+                        output_dir=temp_path
+                    )
+                    download_name = '马来跨境店财务分析结果.xlsx'
+                else:  # indonesia (默认)
+                    output_path = process_financial_data(
+                        order_files=order_paths,
+                        settlement_files=settlement_paths,
+                        consumption_file=consumption_path,
+                        output_dir=temp_path
+                    )
+                    download_name = '印尼财务分析结果.xlsx'
                 
                 # 返回结果文件
                 return send_file(
                     output_path,
                     as_attachment=True,
-                    download_name='财务分析结果.xlsx',
+                    download_name=download_name,
                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
 
