@@ -37,12 +37,12 @@ pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-hos
 ### 2. 启动服务
 
 ```bash
-python app.py
+uvicorn fastapi_app:app --host 0.0.0.0 --port 8080
 ```
 
 ### 3. 访问系统
 
-打开浏览器访问：`http://localhost:5000`
+打开浏览器访问：`http://localhost:8080`
 
 ## 📊 使用说明
 
