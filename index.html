@@ -226,6 +226,10 @@
             color: #721c24;
         }
 
+        .dashboard {
+            margin-top: 40px;
+        }
+
         .download-btn {
             background: linear-gradient(45deg, #ff6b6b, #ffd93d);
             color: white;
@@ -265,6 +269,7 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -321,6 +326,9 @@
             </div>
             
             <div class="result" id="result"></div>
+            <div class="dashboard" id="dashboard">
+                <canvas id="profit-chart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -518,6 +526,14 @@
                         <p>${moduleName}财务分析报告已生成</p>
                         <a href="${url}" download="${downloadName}" class="download-btn">📥 下载结果文件</a>
                     `;
+
+                    // 获取仪表盘数据并渲染
+                    const dashForm = new FormData();
+                    dashForm.append('analysis_type', selectedModule);
+                    fileStorage.orders.forEach(f => dashForm.append('orders', f));
+                    fileStorage.settlements.forEach(f => dashForm.append('settlements', f));
+                    dashForm.append('consumption', fileStorage.consumption);
+                    fetchDashboardData(dashForm);
                 } else {
                     const errorData = await response.json();
                     throw new Error(errorData.error || '处理失败');
@@ -537,6 +553,53 @@
                 result.style.display = 'block';
                 updateProcessButton();
             }
+        }
+
+        async function fetchDashboardData(formData) {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.style.display = 'none';
+            try {
+                const resp = await fetch('/process_dashboard', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (resp.ok) {
+                    const json = await resp.json();
+                    renderDashboard(json.data);
+                }
+            } catch (e) {
+                console.error('获取仪表盘数据失败', e);
+            }
+        }
+
+        let profitChart;
+        function renderDashboard(data) {
+            if (!data || data.length === 0) return;
+            const dashboard = document.getElementById('dashboard');
+            dashboard.style.display = 'block';
+
+            const labels = data.slice(0, 10).map(d => d['SKU']);
+            const profits = data.slice(0, 10).map(d => d['人民币利润']);
+
+            const ctx = document.getElementById('profit-chart').getContext('2d');
+            if (profitChart) profitChart.destroy();
+            profitChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '人民币利润',
+                        data: profits,
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
         }
     </script>
 </body>
