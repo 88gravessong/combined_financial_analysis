@@ -20,7 +20,7 @@ echo "📦 检查并安装依赖..."
 pip install -r requirements.txt
 
 # 检查必要文件
-required_files=("app.py" "analysis_multi.py" "index.html")
+required_files=("fastapi_app.py" "analysis_multi.py" "index.html")
 for file in "${required_files[@]}"; do
     if [ ! -f "$file" ]; then
         echo "❌ 缺少必要文件: $file"
@@ -35,5 +35,5 @@ echo "📊 访问地址: http://localhost:8080"
 echo "💡 使用 Ctrl+C 停止服务器"
 echo ""
 
-# 启动Flask应用
-python app.py 
+# 启动 FastAPI 应用
+uvicorn fastapi_app:app --host 0.0.0.0 --port 8080
