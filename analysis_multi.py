@@ -132,21 +132,23 @@ def merge_settlement_files(settlement_files: List[Union[str, Path]]) -> pd.DataF
     
     return merged_settlements
 
-def process_financial_data(order_files: List[Union[str, Path]], 
-                         settlement_files: List[Union[str, Path]], 
+def process_financial_data(order_files: List[Union[str, Path]],
+                         settlement_files: List[Union[str, Path]],
                          consumption_file: Union[str, Path],
-                         output_dir: Union[str, Path] = ".") -> Path:
+                         output_dir: Union[str, Path] = ".",
+                         return_sku: bool = False) -> Union[Path, tuple[Path, pd.DataFrame]]:
     """
     处理财务数据分析
     
     Args:
         order_files: 订单文件列表
-        settlement_files: 结算文件列表  
+        settlement_files: 结算文件列表
         consumption_file: 产品消耗文件
         output_dir: 输出目录
-        
+        return_sku: 为 True 时同时返回 SKU 指标数据
+
     Returns:
-        输出文件路径
+        输出文件路径或 (输出文件路径, SKU DataFrame)
     """
     
     print("🚀 开始财务数据分析...")
@@ -260,9 +262,10 @@ def process_financial_data(order_files: List[Union[str, Path]],
     base = base.join(delivered_amount.rename("签收金额"), how="left")
 
     sku = base
-    for k,v in metrics.items(): 
+    for k,v in metrics.items():
         sku = sku.join(v.rename(k), how="left")
     sku = sku.fillna(0)
+    sku.index.name = 'SKU'
 
     # 运营率计算
     sku["签收率"] = sku["签收订单数"] / sku["订单数"]
@@ -332,7 +335,7 @@ def process_financial_data(order_files: List[Union[str, Path]],
     print(f"📈 处理了 {len(order_files)} 个订单文件, {len(settlement_files)} 个结算文件")
     print(f"📊 总计订单: {len(order)} 行, SKU数量: {len(sku)} 个")
     
-    return output_path
+    return (output_path, sku) if return_sku else output_path
 
 if __name__ == "__main__":
     # 测试用例

@@ -125,6 +125,73 @@ def process_files():
         app.logger.error(traceback.format_exc())
         return jsonify({'error': f'文件处理失败: {str(e)}'}), 500
 
+
+@app.route('/process_dashboard', methods=['POST'])
+def process_dashboard():
+    """处理文件并返回用于仪表盘的JSON数据（仅支持印尼模块）"""
+    try:
+        analysis_type = request.form.get('analysis_type', 'indonesia')
+        if analysis_type != 'indonesia':
+            return jsonify({'error': '当前仪表盘仅支持印尼财务分析'}), 400
+
+        if 'orders' not in request.files or 'settlements' not in request.files or 'consumption' not in request.files:
+            return jsonify({'error': '缺少必要的文件。'}), 400
+
+        order_files = request.files.getlist('orders')
+        settlement_files = request.files.getlist('settlements')
+        consumption_file = request.files['consumption']
+
+        if not order_files or not settlement_files or not consumption_file:
+            return jsonify({'error': '请上传所有必要的文件'}), 400
+
+        all_files = order_files + settlement_files + [consumption_file]
+        for file in all_files:
+            if file.filename == '' or not allowed_file(file.filename):
+                return jsonify({'error': f'文件 {file.filename} 格式不正确，请上传Excel文件'}), 400
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+
+            order_paths = []
+            for i, file in enumerate(order_files):
+                filename = f"order_{i+1}_{secure_filename(file.filename)}"
+                file_path = temp_path / filename
+                file.save(str(file_path))
+                order_paths.append(file_path)
+
+            settlement_paths = []
+            for i, file in enumerate(settlement_files):
+                filename = f"settlement_{i+1}_{secure_filename(file.filename)}"
+                file_path = temp_path / filename
+                file.save(str(file_path))
+                settlement_paths.append(file_path)
+
+            consumption_filename = f"consumption_{secure_filename(consumption_file.filename)}"
+            consumption_path = temp_path / consumption_filename
+            consumption_file.save(str(consumption_path))
+
+            try:
+                output_path, sku_df = process_financial_data(
+                    order_files=order_paths,
+                    settlement_files=settlement_paths,
+                    consumption_file=consumption_path,
+                    output_dir=temp_path,
+                    return_sku=True
+                )
+
+                data = sku_df.reset_index().to_dict(orient='records')
+                return jsonify({'data': data})
+
+            except Exception as e:
+                app.logger.error(f"数据分析错误: {str(e)}")
+                app.logger.error(traceback.format_exc())
+                return jsonify({'error': f'数据分析失败: {str(e)}'}), 500
+
+    except Exception as e:
+        app.logger.error(f"文件处理错误: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        return jsonify({'error': f'文件处理失败: {str(e)}'}), 500
+
 if __name__ == '__main__':
     print("🚀 启动财务数据分析系统...")
     print("📊 访问地址: http://localhost:8080")
